@@ -5,6 +5,7 @@ using UnityEngine;
 public class PolygonGroup : MonoBehaviour {
 
     public PolygonGroup TransformTo;
+    public float TransformSpeed;
 
     Polygon[] polygons;
 
@@ -33,7 +34,7 @@ public class PolygonGroup : MonoBehaviour {
             ready = false;
             for (int i = 0; i < polygons.Length; ++i)
             {
-                if (!polygons[i].MoveTowards(target.polygons[i])) ready = true;
+                if (polygons[i].MoveTowards(target.polygons[i], TransformSpeed)) ready = true;
             }
             yield return null;
         }

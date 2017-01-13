@@ -15,22 +15,22 @@ public class Polygon : MonoBehaviour
     MeshFilter meshFilter;
     MeshRenderer meshRenderer;
 
-    float speed = 10.0f;
-
-    public bool MoveTowards(Polygon target)
+    public bool MoveTowards(Polygon target, float speed)
     {
         Vector2[] currentPos = PolygonCollider.points;
         Vector2[] targetPos = target.PolygonCollider.points;
 
         bool done = true;
+        float totalDistance = 0;
         for (int i = 0; i < currentPos.Length; ++i)
         {
             currentPos[i] = Vector2.MoveTowards(currentPos[i], targetPos[i], Time.deltaTime * speed);
             if (Vector2.Distance(currentPos[i], targetPos[i]) > 0.001f) done = false;
         }
 
-        Debug.Log("asd");
+        //meshRenderer.sharedMaterial.color = Color.Lerp(0, );
 
+        PolygonCollider.points = currentPos;
         UpdateMeshFilter();
 
         return done;
