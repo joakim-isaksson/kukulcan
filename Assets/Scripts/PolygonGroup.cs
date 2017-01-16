@@ -4,12 +4,13 @@ using UnityEngine;
 
 public class PolygonGroup : MonoBehaviour {
 
-    public PolygonGroup TransformTo;
-    public float TransformSpeed;
+    public PolygonGroup TargetGroup;
+    public float TransformTime;
 
     Polygon[] polygons;
 
     bool transforming;
+    int waitingForPolygons;
 
     void Awake()
     {
@@ -18,28 +19,28 @@ public class PolygonGroup : MonoBehaviour {
 
     void Update()
     {
-        if (!transforming && TransformTo != null && Input.anyKeyDown)
+        if (!transforming && TargetGroup != null && Input.anyKeyDown)
         {
-            StartCoroutine(Transform(TransformTo));
+            StartCoroutine(TransformTo(TargetGroup));
         }
     }
 
-    IEnumerator Transform(PolygonGroup target)
+    IEnumerator TransformTo(PolygonGroup target)
     {
         transforming = true;
+        waitingForPolygons = polygons.Length;
 
-        bool ready;
-        do
+        for (int i = 0; i < polygons.Length; ++i)
         {
-            ready = false;
-            for (int i = 0; i < polygons.Length; ++i)
-            {
-                if (polygons[i].MoveTowards(target.polygons[i], TransformSpeed)) ready = true;
-            }
-            yield return null;
+            polygons[i].TransformTo(target.polygons[i], TransformTime, OnPolygonReady);
         }
-        while (!ready);
 
+        while(waitingForPolygons > 0) yield return null;
         transforming = false;
+    }
+
+    void OnPolygonReady()
+    {
+        waitingForPolygons--;
     }
 }

@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections;
+using UnityEngine;
 
 [RequireComponent(typeof(PolygonCollider2D))]
 [RequireComponent(typeof(MeshFilter))]
@@ -10,35 +12,14 @@ public class Polygon : MonoBehaviour
     public Color Color;
 
     [HideInInspector]
-    public PolygonCollider2D PolygonCollider;
+    public PolygonCollider2D PC2D;
 
     MeshFilter meshFilter;
     MeshRenderer meshRenderer;
 
-    public bool MoveTowards(Polygon target, float speed)
-    {
-        Vector2[] currentPos = PolygonCollider.points;
-        Vector2[] targetPos = target.PolygonCollider.points;
-
-        bool done = true;
-        float totalDistance = 0;
-        for (int i = 0; i < currentPos.Length; ++i)
-        {
-            currentPos[i] = Vector2.MoveTowards(currentPos[i], targetPos[i], Time.deltaTime * speed);
-            if (Vector2.Distance(currentPos[i], targetPos[i]) > 0.001f) done = false;
-        }
-
-        //meshRenderer.sharedMaterial.color = Color.Lerp(0, );
-
-        PolygonCollider.points = currentPos;
-        UpdateMeshFilter();
-
-        return done;
-    }
-
     void Awake()
     {
-        PolygonCollider = GetComponent<PolygonCollider2D>();
+        PC2D = GetComponent<PolygonCollider2D>();
         meshFilter = GetComponent<MeshFilter>();
         meshRenderer = GetComponent<MeshRenderer>();
 
@@ -50,7 +31,7 @@ public class Polygon : MonoBehaviour
 #if UNITY_EDITOR
     void Update()
     {
-        if (Application.isPlaying || PolygonCollider == null) return;
+        if (Application.isPlaying || PC2D == null) return;
 
         meshRenderer.sharedMaterial.color = Color;
 
@@ -58,12 +39,47 @@ public class Polygon : MonoBehaviour
     }
 #endif
 
+    public void TransformTo(Polygon target, float time, Action callback)
+    {
+        StartCoroutine(AnimateTo(target, time, callback));
+    }
+
+    IEnumerator AnimateTo(Polygon target, float time, Action callback)
+    {
+        Vector3 startingPos = transform.position;
+        Vector2[] startingPoints = PC2D.points;
+
+        float timePassed = 0;
+        float progress = 0;
+        while (progress < 0.99999f)
+        {
+            timePassed += Time.deltaTime;
+            progress = Mathf.Min(timePassed / time, 1.0f);
+
+            Vector2[] newPoints = new Vector2[PC2D.points.Length];
+            for (int i = 0; i < PC2D.points.Length; ++i)
+            {
+                transform.position = Vector3.Lerp(startingPos, target.transform.position, progress);
+                newPoints[i] = Vector2.Lerp(startingPoints[i], target.PC2D.points[i], progress);
+            }
+            PC2D.points = newPoints;
+
+            meshRenderer.sharedMaterial.color = Color.Lerp(Color, target.Color, progress);
+
+            UpdateMeshFilter();
+
+            yield return null;
+        }
+
+        callback();
+    }
+
     void UpdateMeshFilter()
     {
-        int pointCount = PolygonCollider.GetTotalPointCount();
+        int pointCount = PC2D.GetTotalPointCount();
 
         Mesh mesh = new Mesh();
-        Vector2[] points = PolygonCollider.points;
+        Vector2[] points = PC2D.points;
         Vector3[] vertices = new Vector3[pointCount];
         for (int j = 0; j < pointCount; j++)
         {
